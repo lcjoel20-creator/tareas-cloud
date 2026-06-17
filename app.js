@@ -7,7 +7,7 @@ const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==============================
-// Cargar tareas al iniciar
+// CARGAR TAREAS
 // ==============================
 async function cargarTareas() {
   const { data, error } = await db
@@ -24,7 +24,7 @@ async function cargarTareas() {
 }
 
 // ==============================
-// Suscripción en tiempo real
+// REALTIME
 // ==============================
 db.channel("tareas-canal")
   .on(
@@ -41,7 +41,7 @@ db.channel("tareas-canal")
   .subscribe();
 
 // ==============================
-// Agregar tarea nueva
+// AGREGAR TAREA
 // ==============================
 async function agregarTarea() {
   const titulo = document.getElementById("titulo").value.trim();
@@ -52,29 +52,21 @@ async function agregarTarea() {
     return;
   }
 
-  await db.from("tareas").insert({
-    titulo,
-    responsable,
-  });
+  await db.from("tareas").insert([{ titulo, responsable }]);
 
   document.getElementById("titulo").value = "";
   document.getElementById("responsable").value = "";
 }
 
 // ==============================
-// Cambiar estado
+// TOGGLE ESTADO
 // ==============================
 async function toggleEstado(id, estado) {
-  await db
-    .from("tareas")
-    .update({
-      completada: !estado,
-    })
-    .eq("id", id);
+  await db.from("tareas").update({ completada: !estado }).eq("id", id);
 }
 
 // ==============================
-// Eliminar tarea
+// ELIMINAR
 // ==============================
 async function eliminarTarea(id) {
   if (confirm("¿Eliminar esta tarea?")) {
@@ -83,7 +75,50 @@ async function eliminarTarea(id) {
 }
 
 // ==============================
-// Renderizar lista
+// ✏️ EDITAR (NUEVO)
+// ==============================
+async function editarTarea(id, tituloActual, responsableActual) {
+  const nuevoTitulo = prompt("Editar título:", tituloActual);
+  const nuevoResponsable = prompt("Editar responsable:", responsableActual);
+
+  if (!nuevoTitulo || !nuevoResponsable) return;
+
+  await db
+    .from("tareas")
+    .update({
+      titulo: nuevoTitulo.trim(),
+      responsable: nuevoResponsable.trim(),
+    })
+    .eq("id", id);
+}
+
+// ==============================
+// 🔎 BUSCAR (NUEVO)
+// ==============================
+async function buscarTareas() {
+  const texto = document.getElementById("busqueda").value.toLowerCase();
+
+  const { data, error } = await db
+    .from("tareas")
+    .select("*")
+    .order("created_at");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const filtradas = data.filter(
+    (t) =>
+      t.titulo.toLowerCase().includes(texto) ||
+      t.responsable.toLowerCase().includes(texto),
+  );
+
+  renderTareas(filtradas);
+}
+
+// ==============================
+// RENDER (TU DISEÑO ORIGINAL + BOTÓN EDITAR)
 // ==============================
 function renderTareas(tareas) {
   const cont = document.getElementById("tareas-container");
@@ -109,10 +144,11 @@ function renderTareas(tareas) {
             ${t.completada ? "Reabrir" : "Completar"}
           </button>
 
-          <button
-            class="btn-eliminar"
-            onclick="eliminarTarea('${t.id}')"
-          >
+          <button onclick="editarTarea('${t.id}', '${t.titulo}', '${t.responsable}')">
+            Editar
+          </button>
+
+          <button class="btn-eliminar" onclick="eliminarTarea('${t.id}')">
             Eliminar
           </button>
         </div>
@@ -123,6 +159,6 @@ function renderTareas(tareas) {
 }
 
 // ==============================
-// Iniciar aplicación
+// INICIAR
 // ==============================
 cargarTareas();

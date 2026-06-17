@@ -200,4 +200,9 @@ main {
   .tarea-acciones button {
     flex: 1;
   }
+
+  /* BUSCADOR (MISMO ESTILO DEL FORMULARIO) */
+  .formulario input {
+    margin-bottom: 12px;
+  }
 }
